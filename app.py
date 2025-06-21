@@ -5,7 +5,6 @@ import uuid
 from datetime import datetime
 import os
 
-# Google Sheets (replace with your own if using gspread or API integration)
 MEMBERS_FILE = "members.csv"
 PAYMENTS_FILE = "payments.csv"
 
@@ -76,23 +75,27 @@ def payment_section(members, payments):
     st.subheader("💸 Payments") 
     tab1, tab2 = st.tabs(["Add Payment", "Payment History"])
     with tab1:
-        member_list = members[["Member ID", "Full Name"]].astype(str)
-        selection = st.selectbox("Select Member", member_list.apply(lambda x: f"{x['Member ID']} - {x['Full Name']}", axis=1))
-        member_id, name = selection.split(" - ", 1)
-        amount = st.number_input("Amount (AED)", min_value=0.0, step=10.0)
-        date = st.date_input("Date", value=datetime.now())
-        notes = st.text_input("Notes (optional)")
-        if st.button("Save Payment"):
-            payment_id = str(uuid.uuid4())[:8]
-            payments = pd.concat([payments, pd.DataFrame([{
-                "Payment ID": payment_id,
-                "Member ID": member_id,
-                "Name": name,
-                "Amount": amount,
-                "Date": date,
-                "Notes": notes
-            }])], ignore_index=True)
-            st.success(f"Payment saved for {name}.")
+        if not members.empty:
+            member_list = members[["Member ID", "Full Name"]].astype(str)
+            selection = st.selectbox("Select Member", member_list.apply(lambda x: f"{x['Member ID']} - {x['Full Name']}", axis=1))
+            if selection:
+                member_id, name = selection.split(" - ", 1)
+                amount = st.number_input("Amount (AED)", min_value=0.0, step=10.0)
+                date = st.date_input("Date", value=datetime.now())
+                notes = st.text_input("Notes (optional)")
+                if st.button("Save Payment"):
+                    payment_id = str(uuid.uuid4())[:8]
+                    payments = pd.concat([payments, pd.DataFrame([{
+                        "Payment ID": payment_id,
+                        "Member ID": member_id,
+                        "Name": name,
+                        "Amount": amount,
+                        "Date": date,
+                        "Notes": notes
+                    }])], ignore_index=True)
+                    st.success(f"Payment saved for {name}.")
+        else:
+            st.warning("No members found. Please add a member first.")
     with tab2:
         search = st.text_input("🔍 Search Payments")
         filtered = payments[payments.apply(lambda row: search.lower() in row.astype(str).str.lower().to_string(), axis=1)] if search else payments
